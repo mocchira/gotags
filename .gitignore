@@ -1,0 +1,6 @@
+#files compiled
+*.6
+#files executable
+gotags
+#hg
+.hg
