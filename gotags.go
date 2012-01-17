@@ -32,11 +32,18 @@ import (
 	"go/token"
 	"os"
 	"sort"
+	"unicode"
+	"unicode/utf8"
 )
 
 var (
 	tags = make(sort.StringSlice, 0)
 )
+
+func isPrivate(n string) bool {
+	dst := utf8.NewString(n)
+	return unicode.IsLower(dst.At(0))
+}
 
 func output_tag(pkgName *ast.Ident, fset *token.FileSet, name *ast.Ident, kind byte, hasRecv bool) {
 	position := fset.Position(name.NamePos)
@@ -46,7 +53,7 @@ func output_tag(pkgName *ast.Ident, fset *token.FileSet, name *ast.Ident, kind b
 			name.Name, position.Filename, position.Line, kind)))
 	case FUNC:
 		var fname string
-		if hasRecv {
+		if hasRecv || isPrivate(name.Name) {
 			fname = name.Name
 		} else {
 			fname = pkgName.Name + "." + name.Name
@@ -54,8 +61,14 @@ func output_tag(pkgName *ast.Ident, fset *token.FileSet, name *ast.Ident, kind b
 		tags = append(tags, (fmt.Sprintf("%s\t%s\t%d;\"\t%c",
 			fname, position.Filename, position.Line, kind)))
 	default:
-		tags = append(tags, (fmt.Sprintf("%s.%s\t%s\t%d;\"\t%c",
-			pkgName.Name, name.Name, position.Filename, position.Line, kind)))
+		var vname string
+		if isPrivate(name.Name) {
+			vname = name.Name
+		} else {
+			vname = pkgName.Name + "." + name.Name
+		}
+		tags = append(tags, (fmt.Sprintf("%s\t%s\t%d;\"\t%c",
+			vname, position.Filename, position.Line, kind)))
 	}
 }
 
